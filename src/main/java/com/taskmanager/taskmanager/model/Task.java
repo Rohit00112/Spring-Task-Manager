@@ -33,9 +33,11 @@ public class Task {
     @Column(nullable = false)
     private LocalDate dueDate;
 
+
+
     @lombok.ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignee_id")
-    private User assignee;
+    @JoinColumn(name = "user_id")
+    private User user;
 
 }
