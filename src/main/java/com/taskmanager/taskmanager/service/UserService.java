@@ -2,6 +2,7 @@ package com.taskmanager.taskmanager.service;
 
 import com.taskmanager.taskmanager.model.User;
 import com.taskmanager.taskmanager.repository.UserRepository;
+import com.taskmanager.taskmanager.utils.PasswordUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,6 +16,7 @@ public class UserService {
     private UserRepository userRepository;
 
     public User saveUser(User user) {
+        user.setPassword(PasswordUtil.hashPassword(user.getPassword()));
         return userRepository.save(user);
     }
 

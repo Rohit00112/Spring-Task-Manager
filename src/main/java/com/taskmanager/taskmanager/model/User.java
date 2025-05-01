@@ -32,4 +32,11 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Task> task;
+
+    @PrePersist
+    public void prePersist() {
+        if (role == null) {
+            role = Role.ROLE_USER;
+        }
+    }
 }
