@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
@@ -23,9 +25,9 @@ public class Task {
     @Column(nullable = false)
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
-
+    private TaskStatus status;
 
     @Enumerated(EnumType.STRING)
     private Priority priority;
@@ -33,11 +35,23 @@ public class Task {
     @Column(nullable = false)
     private LocalDate dueDate;
 
+    @Column
+    private LocalDate reminderDate;
 
+    @Column
+    private boolean completed;
 
     @lombok.ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
+    @ManyToMany
+    @JoinTable(
+        name = "task_categories",
+        joinColumns = @JoinColumn(name = "task_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    @Builder.Default
+    private List<Category> categories = new ArrayList<>();
 }

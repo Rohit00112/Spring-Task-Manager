@@ -1,26 +1,44 @@
 package com.taskmanager.taskmanager.controller;
 
 import com.taskmanager.taskmanager.dto.AuthRequest;
+import com.taskmanager.taskmanager.security.JwtUtil;
 import com.taskmanager.taskmanager.service.UserService;
 import com.taskmanager.taskmanager.utils.PasswordUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.taskmanager.taskmanager.model.User;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
-class AuthController {
+@RequestMapping("/api/auth")
+public class AuthController {
 
     @Autowired
     private UserService userService;
 
-    @PostMapping("/auth/register")
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody AuthRequest authRequest) {
+        // Validate request
+        if (authRequest.getUsername() == null || authRequest.getPassword() == null || authRequest.getEmail() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Username, password and email are required"));
+        }
+
         User user = new User();
         user.setUsername(authRequest.getUsername());
         user.setPassword(authRequest.getPassword());
@@ -30,23 +48,38 @@ class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
         }
 
-        if (userService.findUserByUsername(user.getEmail()).isPresent()) {
+        Optional<User> userByEmail = userService.findUserByEmail(user.getEmail());
+        if (userByEmail.isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Email already exists"));
         }
 
-       User savedUser = userService.saveUser(user);
-        return ResponseEntity.ok(savedUser);
+        User savedUser = userService.saveUser(user);
+
+        // Generate JWT token
+        final String jwt = jwtUtil.generateToken(savedUser.getUsername());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", jwt);
+        response.put("user", savedUser);
+
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/auth/login")
+    @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {
-        Optional<User> user = userService.findUserByUsername(authRequest.getEmail());
-        assert user.isPresent();
-        boolean checkPassword = PasswordUtil.checkPassword(authRequest.getPassword(), user.get().getPassword());
-        if (!checkPassword) {
+        try {
+            // Authenticate user
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
+            );
+
+            // If authentication is successful, generate JWT token
+            final String jwt = jwtUtil.generateToken(authRequest.getUsername());
+
+            return ResponseEntity.ok(Map.of("token", jwt));
+
+        } catch (BadCredentialsException e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid username or password"));
         }
-
-        return ResponseEntity.ok("Logged in successfully");
     }
 }

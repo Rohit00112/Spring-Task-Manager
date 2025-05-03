@@ -1,12 +1,13 @@
 package com.taskmanager.taskmanager.repository;
 
 import com.taskmanager.taskmanager.model.User;
-import org.springframework.data.repository.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-public interface UserRepository extends Repository<User, Long> {
-    User save(User user);
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
-
+    Optional<User> findByEmail(String email);
 }

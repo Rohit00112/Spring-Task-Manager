@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import com.taskmanager.taskmanager.model.Task;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TaskService {
@@ -13,8 +14,8 @@ public class TaskService {
     @Autowired
     private TaskRepository taskRepository;
 
-    public void createTask(Task task) {
-        taskRepository.save(task);
+    public Task createTask(Task task) {
+        return taskRepository.save(task);
     }
 
     public List<Task> getTaskByUserId(Long userId) {
@@ -29,12 +30,11 @@ public class TaskService {
         taskRepository.deleteById(taskId);
     }
 
-    public void updateTask(Task task) {
-        taskRepository.save(task);
+    public Task updateTask(Task task) {
+        return taskRepository.save(task);
     }
 
-    public Task getTaskById(Long taskId) {
+    public Optional<Task> getTaskById(Long taskId) {
         return taskRepository.findById(taskId);
     }
-
 }
