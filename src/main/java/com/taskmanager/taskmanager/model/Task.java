@@ -70,4 +70,8 @@ public class Task {
     )
     @Builder.Default
     private List<Category> categories = new ArrayList<>();
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Attachment> attachments = new ArrayList<>();
 }
