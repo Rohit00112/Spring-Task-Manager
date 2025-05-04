@@ -2,7 +2,7 @@ package com.taskmanager.taskmanager.service;
 
 import com.taskmanager.taskmanager.model.User;
 import com.taskmanager.taskmanager.repository.UserRepository;
-import com.taskmanager.taskmanager.utils.PasswordUtil;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,8 +15,11 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     public User saveUser(User user) {
-        user.setPassword(PasswordUtil.hashPassword(user.getPassword()));
+        // Password should already be encoded by the controller
         return userRepository.save(user);
     }
 

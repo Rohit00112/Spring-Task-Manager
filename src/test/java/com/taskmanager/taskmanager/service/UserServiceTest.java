@@ -3,7 +3,6 @@ package com.taskmanager.taskmanager.service;
 import com.taskmanager.taskmanager.model.Role;
 import com.taskmanager.taskmanager.model.User;
 import com.taskmanager.taskmanager.repository.UserRepository;
-import com.taskmanager.taskmanager.utils.PasswordUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -23,6 +22,9 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private UserService userService;
 
@@ -36,7 +38,7 @@ class UserServiceTest {
                 .id(1L)
                 .username("testuser")
                 .email("test@example.com")
-                .password("password")
+                .password("encodedPassword")
                 .role(Role.ROLE_USER)
                 .build();
     }
