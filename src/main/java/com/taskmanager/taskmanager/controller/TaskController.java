@@ -5,6 +5,7 @@ import com.taskmanager.taskmanager.model.Category;
 import com.taskmanager.taskmanager.model.Task;
 import com.taskmanager.taskmanager.model.User;
 import com.taskmanager.taskmanager.service.CategoryService;
+import com.taskmanager.taskmanager.service.RecurringTaskService;
 import com.taskmanager.taskmanager.service.TaskService;
 import com.taskmanager.taskmanager.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +70,9 @@ public class TaskController {
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired
+    private RecurringTaskService recurringTaskService;
+
     @PostMapping
     public ResponseEntity<?> createTask(@RequestBody TaskDto taskDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -92,6 +96,14 @@ public class TaskController {
                 .user(user)
                 .build();
 
+        // Set recurrence fields if this is a recurring task
+        if (taskDto.isRecurring()) {
+            task.setRecurring(true);
+            task.setRecurrencePattern(taskDto.getRecurrencePattern());
+            task.setRecurrenceInterval(taskDto.getRecurrenceInterval());
+            task.setRecurrenceEndDate(taskDto.getRecurrenceEndDate());
+        }
+
         // Add categories if provided
         if (taskDto.getCategoryIds() != null && !taskDto.getCategoryIds().isEmpty()) {
             for (Long categoryId : taskDto.getCategoryIds()) {
@@ -104,6 +116,62 @@ public class TaskController {
 
         Task savedTask = taskService.createTask(task);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedTask);
+    }
+
+    @PostMapping("/{id}/create-instance")
+    public ResponseEntity<?> createRecurringTaskInstance(@PathVariable Long id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        Optional<User> userOptional = userService.findUserByUsername(username);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<Task> taskOptional = taskService.getTaskById(id);
+        if (taskOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Task task = taskOptional.get();
+        if (!task.getUser().getId().equals(userOptional.get().getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "You don't have permission to access this task"));
+        }
+
+        if (!task.isRecurring()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "This is not a recurring task"));
+        }
+
+        try {
+            Task newInstance = recurringTaskService.createRecurringTaskInstance(task);
+            return ResponseEntity.status(HttpStatus.CREATED).body(newInstance);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/instances")
+    public ResponseEntity<?> getRecurringTaskInstances(@PathVariable Long id) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        Optional<User> userOptional = userService.findUserByUsername(username);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<Task> taskOptional = taskService.getTaskById(id);
+        if (taskOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Task task = taskOptional.get();
+        if (!task.getUser().getId().equals(userOptional.get().getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "You don't have permission to access this task"));
+        }
+
+        List<Task> instances = taskService.findTaskInstancesByParentId(id);
+        return ResponseEntity.ok(instances);
     }
 
     @PutMapping("/{id}")
@@ -133,6 +201,14 @@ public class TaskController {
         existingTask.setDueDate(taskDto.getDueDate());
         existingTask.setReminderDate(taskDto.getReminderDate());
         existingTask.setCompleted(taskDto.isCompleted());
+
+        // Update recurrence fields
+        existingTask.setRecurring(taskDto.isRecurring());
+        if (taskDto.isRecurring()) {
+            existingTask.setRecurrencePattern(taskDto.getRecurrencePattern());
+            existingTask.setRecurrenceInterval(taskDto.getRecurrenceInterval());
+            existingTask.setRecurrenceEndDate(taskDto.getRecurrenceEndDate());
+        }
 
         // Update categories if provided
         if (taskDto.getCategoryIds() != null) {

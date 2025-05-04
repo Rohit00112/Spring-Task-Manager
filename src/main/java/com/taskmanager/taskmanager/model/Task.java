@@ -41,6 +41,22 @@ public class Task {
     @Column
     private boolean completed;
 
+    // Recurrence fields
+    @Column
+    private boolean recurring;
+
+    @Enumerated(EnumType.STRING)
+    private RecurrencePattern recurrencePattern;
+
+    @Column
+    private Integer recurrenceInterval;
+
+    @Column
+    private LocalDate recurrenceEndDate;
+
+    @Column
+    private Long parentTaskId;
+
     @lombok.ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
