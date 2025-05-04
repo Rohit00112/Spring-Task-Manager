@@ -2,9 +2,11 @@ package com.taskmanager.taskmanager.controller;
 
 import com.taskmanager.taskmanager.dto.TaskDto;
 import com.taskmanager.taskmanager.model.Category;
+import com.taskmanager.taskmanager.model.CollaboratorRole;
 import com.taskmanager.taskmanager.model.Task;
 import com.taskmanager.taskmanager.model.User;
 import com.taskmanager.taskmanager.service.CategoryService;
+import com.taskmanager.taskmanager.service.CollaboratorService;
 import com.taskmanager.taskmanager.service.RecurringTaskService;
 import com.taskmanager.taskmanager.service.TaskService;
 import com.taskmanager.taskmanager.service.UserService;
@@ -60,7 +62,13 @@ public class TaskController {
         }
 
         Task task = taskOptional.get();
-        if (!task.getUser().getId().equals(userOptional.get().getId())) {
+        User user = userOptional.get();
+
+        // Check if the user is the owner or a collaborator
+        boolean isOwner = task.getUser().getId().equals(user.getId());
+        boolean isCollaborator = collaboratorService.hasAccess(id, user.getId());
+
+        if (!isOwner && !isCollaborator) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "You don't have permission to access this task"));
         }
 
@@ -72,6 +80,9 @@ public class TaskController {
 
     @Autowired
     private RecurringTaskService recurringTaskService;
+
+    @Autowired
+    private CollaboratorService collaboratorService;
 
     @PostMapping
     public ResponseEntity<?> createTask(@RequestBody TaskDto taskDto) {
@@ -190,7 +201,13 @@ public class TaskController {
         }
 
         Task existingTask = taskOptional.get();
-        if (!existingTask.getUser().getId().equals(userOptional.get().getId())) {
+        User user = userOptional.get();
+
+        // Check if the user is the owner or has edit permissions
+        boolean isOwner = existingTask.getUser().getId().equals(user.getId());
+        boolean canEdit = collaboratorService.hasRole(id, user.getId(), CollaboratorRole.EDITOR);
+
+        if (!isOwner && !canEdit) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "You don't have permission to update this task"));
         }
 
@@ -242,7 +259,13 @@ public class TaskController {
         }
 
         Task task = taskOptional.get();
-        if (!task.getUser().getId().equals(userOptional.get().getId())) {
+        User user = userOptional.get();
+
+        // Check if the user is the owner or has admin permissions
+        boolean isOwner = task.getUser().getId().equals(user.getId());
+        boolean isAdmin = collaboratorService.hasRole(id, user.getId(), CollaboratorRole.ADMIN);
+
+        if (!isOwner && !isAdmin) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "You don't have permission to delete this task"));
         }
 

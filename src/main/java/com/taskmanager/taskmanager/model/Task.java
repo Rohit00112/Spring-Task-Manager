@@ -82,4 +82,8 @@ public class Task {
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<TaskCollaborator> collaborators = new ArrayList<>();
 }
